@@ -5,7 +5,10 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract BeatBitDAO is Ownable {
-    // Struct to define a proposal
+    IERC20 public governanceToken;
+
+    uint256 public proposalCount;
+    
     struct Proposal {
         uint256 id;
         string description;
@@ -15,17 +18,12 @@ contract BeatBitDAO is Ownable {
         bool executed;
     }
 
-    // State variables
-    IERC20 public governanceToken;
-    uint256 public proposalCount;
     mapping(uint256 => Proposal) public proposals;
 
-    // Constructor to initialize the governance token
-    constructor(address _governanceToken) {
+    constructor(address _governanceToken, address initialOwner) Ownable(initialOwner) {
         governanceToken = IERC20(_governanceToken);
     }
 
-    // Function to create a new proposal
     function createProposal(string memory description) external onlyOwner {
         proposalCount++;
         proposals[proposalCount] = Proposal(
@@ -38,31 +36,25 @@ contract BeatBitDAO is Ownable {
         );
     }
 
-    // Function to vote on a proposal
     function vote(uint256 proposalId, bool support) external {
         Proposal storage proposal = proposals[proposalId];
         require(block.timestamp < proposal.deadline, "Voting period ended");
         require(!proposal.executed, "Proposal already executed");
 
-        uint256 voterBalance = governanceToken.balanceOf(msg.sender);
-        require(voterBalance > 0, "No tokens to vote with");
-
         if (support) {
-            proposal.votesFor += voterBalance;
+            proposal.votesFor += governanceToken.balanceOf(msg.sender);
         } else {
-            proposal.votesAgainst += voterBalance;
+            proposal.votesAgainst += governanceToken.balanceOf(msg.sender);
         }
     }
 
-    // Function to execute a proposal
     function executeProposal(uint256 proposalId) external onlyOwner {
         Proposal storage proposal = proposals[proposalId];
         require(block.timestamp >= proposal.deadline, "Voting period not ended");
         require(!proposal.executed, "Proposal already executed");
 
         if (proposal.votesFor > proposal.votesAgainst) {
-            // Logic to execute proposal goes here
-            // For example, interacting with other contracts or transferring funds
+            // Execute proposal
         }
 
         proposal.executed = true;

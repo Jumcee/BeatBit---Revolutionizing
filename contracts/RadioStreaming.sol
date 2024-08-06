@@ -1,69 +1,50 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract RadioStreaming is Ownable {
+    IERC20 public token;
+
+    constructor(address _token, address initialOwner) Ownable(initialOwner) {
+        token = IERC20(_token);
+    }
+
     struct Station {
+        string name;
         uint256 stakedTokens;
-        uint256 lastUpdated;
     }
 
-    mapping(address => Station) public stations;
     mapping(address => uint256) public rewards;
+    mapping(uint256 => Station) public stations;
+    uint256 public stationCount;
 
-    address public tokenAddress;
-    uint256 public rewardRate; // Reward rate per staked token per second
-
-    event TokensStaked(address indexed user, uint256 amount);
-    event RewardClaimed(address indexed user, uint256 reward);
-
-    constructor(address _tokenAddress, uint256 _rewardRate) {
-        tokenAddress = _tokenAddress;
-        rewardRate = _rewardRate;
+    function createStation(string memory name) external onlyOwner {
+        stationCount++;
+        stations[stationCount] = Station(name, 0);
     }
 
-    function stakeTokens(uint256 amount) external {
-        require(amount > 0, "Amount must be greater than 0");
+    function stake(uint256 stationId, uint256 amount) external {
+        require(amount > 0, "Cannot stake 0 tokens");
 
-        IERC20(tokenAddress).transferFrom(msg.sender, address(this), amount);
+        token.transferFrom(msg.sender, address(this), amount);
 
-        Station storage station = stations[msg.sender];
-        _updateReward(station);
-
-        station.stakedTokens += amount;
-        station.lastUpdated = block.timestamp;
-
-        emit TokensStaked(msg.sender, amount);
+        stations[stationId].stakedTokens += amount;
+        rewards[msg.sender] += amount; // Assuming rewards are added based on staked tokens
     }
 
-    function claimReward() external {
-        Station storage station = stations[msg.sender];
-        _updateReward(station);
+    function withdraw(uint256 amount) external onlyOwner {
+        require(amount > 0, "Cannot withdraw 0 tokens");
+        require(token.balanceOf(address(this)) >= amount, "Insufficient balance");
 
-        uint256 reward = rewards[msg.sender];
-        require(reward > 0, "No rewards available");
-
-        rewards[msg.sender] = 0;
-        IERC20(tokenAddress).transfer(msg.sender, reward);
-
-        emit RewardClaimed(msg.sender, reward);
+        token.transfer(msg.sender, amount);
     }
 
-    function _updateReward(Station storage station) internal {
-        if (station.stakedTokens > 0) {
-            uint256 timeElapsed = block.timestamp - station.lastUpdated;
-            uint256 reward = station.stakedTokens * rewardRate * timeElapsed / 1e18;
-            rewards[msg.sender] += reward;
-        }
-        station.lastUpdated = block.timestamp;
-    }
+    function reward(address to, uint256 amount) external onlyOwner {
+        require(amount > 0, "Cannot reward 0 tokens");
+        require(token.balanceOf(address(this)) >= amount, "Insufficient balance");
 
-    function setTokenAddress(address _tokenAddress) external onlyOwner {
-        tokenAddress = _tokenAddress;
-    }
-
-    function setRewardRate(uint256 _rewardRate) external onlyOwner {
-        rewardRate = _rewardRate;
+        token.transfer(to, amount);
     }
 }

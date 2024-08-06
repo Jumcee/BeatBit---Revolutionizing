@@ -1,70 +1,80 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract EnhancedStaking is Ownable {
-    struct Staker {
-        uint256 amountStaked;
-        uint256 rewardDebt;
-        uint256 lastClaimed;
-    }
-
-    mapping(address => Staker) public stakers;
-    address public tokenAddress;
-    uint256 public rewardRate;
+    IERC20 public stakingToken;
+    mapping(address => uint256) public stakedBalances;
+    mapping(address => uint256) public rewardBalances;
+    address[] public stakers;
     uint256 public totalStaked;
-    uint256 public accRewardPerShare;
+    uint256 public rewardRate;
 
-    constructor(address _tokenAddress, uint256 _rewardRate) {
-        tokenAddress = _tokenAddress;
+    constructor(address _stakingToken, uint256 _rewardRate, address initialOwner) Ownable(initialOwner) {
+        stakingToken = IERC20(_stakingToken);
         rewardRate = _rewardRate;
     }
 
     function stake(uint256 amount) external {
-        IERC20(tokenAddress).transferFrom(msg.sender, address(this), amount);
+        require(amount > 0, "Cannot stake 0 tokens");
 
-        Staker storage staker = stakers[msg.sender];
-        _updateRewards(staker);
-
-        staker.amountStaked += amount;
-        staker.rewardDebt = staker.amountStaked * accRewardPerShare / 1e12;
-        totalStaked += amount;
-    }
-
-    function claimRewards() external {
-        Staker storage staker = stakers[msg.sender];
-        _updateRewards(staker);
-
-        uint256 reward = staker.amountStaked * accRewardPerShare / 1e12 - staker.rewardDebt;
-        require(reward > 0, "No rewards available");
-
-        IERC20(tokenAddress).transfer(msg.sender, reward);
-        staker.rewardDebt = staker.amountStaked * accRewardPerShare / 1e12;
-    }
-
-    function _updateRewards(Staker storage staker) internal {
-        if (totalStaked > 0) {
-            uint256 reward = (block.timestamp - staker.lastClaimed) * rewardRate * staker.amountStaked / totalStaked;
-            accRewardPerShare += reward * 1e12 / totalStaked;
-            staker.lastClaimed = block.timestamp;
+        if (stakedBalances[msg.sender] == 0) {
+            stakers.push(msg.sender);  // Add to stakers array
         }
+
+        stakedBalances[msg.sender] += amount;
+        totalStaked += amount;
+
+        stakingToken.transferFrom(msg.sender, address(this), amount);
     }
 
     function unstake(uint256 amount) external {
-        Staker storage staker = stakers[msg.sender];
-        require(staker.amountStaked >= amount, "Insufficient staked amount");
+        require(stakedBalances[msg.sender] >= amount, "Insufficient balance to unstake");
 
-        _updateRewards(staker);
-
-        staker.amountStaked -= amount;
-        staker.rewardDebt = staker.amountStaked * accRewardPerShare / 1e12;
+        stakedBalances[msg.sender] -= amount;
         totalStaked -= amount;
 
-        IERC20(tokenAddress).transfer(msg.sender, amount);
+        if (stakedBalances[msg.sender] == 0) {
+            // Remove from stakers array
+            for (uint256 i = 0; i < stakers.length; i++) {
+                if (stakers[i] == msg.sender) {
+                    stakers[i] = stakers[stakers.length - 1];
+                    stakers.pop();
+                    break;
+                }
+            }
+        }
+
+        stakingToken.transfer(msg.sender, amount);
     }
 
-    function setRewardRate(uint256 _rewardRate) external onlyOwner {
-        rewardRate = _rewardRate;
+    function distributeRewards() external onlyOwner {
+        for (uint256 i = 0; i < stakers.length; i++) {
+            address staker = stakers[i];
+            uint256 reward = calculateReward(staker);
+            rewardBalances[staker] += reward;
+        }
+    }
+
+    function claimRewards() external {
+        uint256 reward = rewardBalances[msg.sender];
+        require(reward > 0, "No rewards to claim");
+
+        rewardBalances[msg.sender] = 0;
+        stakingToken.transfer(msg.sender, reward);
+    }
+
+    function calculateReward(address account) public view returns (uint256) {
+        return stakedBalances[account] * rewardRate;
+    }
+
+    function getStakedBalance(address account) external view returns (uint256) {
+        return stakedBalances[account];
+    }
+
+    function getStakers() external view returns (address[] memory) {
+        return stakers;
     }
 }

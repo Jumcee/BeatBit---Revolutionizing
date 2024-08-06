@@ -1,32 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract BeatBitRewards is Ownable {
     IERC20 public rewardToken;
 
-    struct Reward {
-        uint256 amount;
-        bool claimed;
+    mapping(address => uint256) public rewards;
+
+    constructor(address _rewardToken) Ownable(msg.sender) {
+        rewardToken = IERC20(_rewardToken);
     }
 
-    mapping(address => Reward) public rewards;
+    function distributeRewards(address[] calldata accounts, uint256[] calldata amounts) external onlyOwner {
+        require(accounts.length == amounts.length, "Mismatched input lengths");
 
-    constructor(IERC20 _rewardToken) {
-        rewardToken = _rewardToken;
-    }
-
-    function setReward(address recipient, uint256 amount) external onlyOwner {
-        rewards[recipient] = Reward(amount, false);
+        for (uint256 i = 0; i < accounts.length; i++) {
+            rewards[accounts[i]] += amounts[i];
+        }
     }
 
     function claimReward() external {
-        Reward storage reward = rewards[msg.sender];
-        require(reward.amount > 0, "No rewards to claim");
-        require(!reward.claimed, "Reward already claimed");
+        uint256 reward = rewards[msg.sender];
+        require(reward > 0, "No rewards to claim");
 
-        rewardToken.transfer(msg.sender, reward.amount);
-        reward.claimed = true;
+        rewards[msg.sender] = 0;
+        rewardToken.transfer(msg.sender, reward);
     }
 }
