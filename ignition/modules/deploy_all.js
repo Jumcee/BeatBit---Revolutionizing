@@ -1,55 +1,54 @@
-// scripts/deploy_all.js
 const { ethers } = require("hardhat");
 
 async function main() {
-  // Deploy BeatBitNFT
-  console.log("Deploying BeatBitNFT...");
-  const BeatBitNFT = await ethers.getContractFactory("BeatBitNFT");
-  const beatBitNFT = await BeatBitNFT.deploy("BeatBit NFT", "BBNFT"); // Provide required arguments
-  await beatBitNFT.deployed();
-  console.log("BeatBitNFT deployed to:", beatBitNFT.address);
+  const [deployer] = await ethers.getSigners();
 
-  // Deploy BeatBitRewards
-  console.log("Deploying BeatBitRewards...");
-  const BeatBitRewards = await ethers.getContractFactory("BeatBitRewards");
-  const beatBitRewards = await BeatBitRewards.deploy(); // Assuming no arguments
-  await beatBitRewards.deployed();
-  console.log("BeatBitRewards deployed to:", beatBitRewards.address);
+  console.log("Deploying contracts with the account:", deployer.address);
 
-  // Deploy BeatBitStaking
-  console.log("Deploying BeatBitStaking...");
-  const BeatBitStaking = await ethers.getContractFactory("BeatBitStaking");
-  const beatBitStaking = await BeatBitStaking.deploy(); // Assuming no arguments
-  await beatBitStaking.deployed();
-  console.log("BeatBitStaking deployed to:", beatBitStaking.address);
+  // Deploy MusicMarketplace
+  const MusicMarketplace = await ethers.getContractFactory("MusicMarketplace");
+  const musicMarketplace = await MusicMarketplace.deploy();
+  console.log("MusicMarketplace deployed to:", musicMarketplace.target);
 
-  // Deploy EnhancedStaking
-  console.log("Deploying EnhancedStaking...");
-  const EnhancedStaking = await ethers.getContractFactory("EnhancedStaking");
-  const enhancedStaking = await EnhancedStaking.deploy(); // Assuming no arguments
-  await enhancedStaking.deployed();
-  console.log("EnhancedStaking deployed to:", enhancedStaking.address);
+  // Deploy ShortReels
+  const ShortReels = await ethers.getContractFactory("ShortReels");
+  const shortReels = await ShortReels.deploy();
+  console.log("ShortReels deployed to:", shortReels.target);
 
-  // Deploy MusicTokenBridge
-  console.log("Deploying MusicTokenBridge...");
-  const MusicTokenBridge = await ethers.getContractFactory("MusicTokenBridge");
-  const musicTokenBridge = await MusicTokenBridge.deploy(); // Assuming no arguments
-  await musicTokenBridge.deployed();
-  console.log("MusicTokenBridge deployed to:", musicTokenBridge.address);
+  // // Deploy BeatBitNFT
+  // const BeatBitNFT = await ethers.getContractFactory("BeatBitNFT");
+  // const beatBitNFT = await BeatBitNFT.deploy("BeatBit NFT", "BBNFT"); // Provide required arguments
+  // console.log("BeatBitNFT deployed to:", beatBitNFT.target);
 
-  // Deploy RadioStreaming
-  console.log("Deploying RadioStreaming...");
-  const RadioStreaming = await ethers.getContractFactory("RadioStreaming");
-  const radioStreaming = await RadioStreaming.deploy(); // Assuming no arguments
-  await radioStreaming.deployed();
-  console.log("RadioStreaming deployed to:", radioStreaming.address);
+  // // Deploy BeatBitRewards
+  // const BeatBitRewards = await ethers.getContractFactory("BeatBitRewards");
+  // const beatBitRewards = await BeatBitRewards.deploy(); // Assuming no arguments
+  // console.log("BeatBitRewards deployed to:", beatBitRewards.target);
 
-  // Deploy MusicFutureTrading
-  console.log("Deploying MusicFutureTrading...");
-  const MusicFutureTrading = await ethers.getContractFactory("MusicFutureTrading");
-  const musicFutureTrading = await MusicFutureTrading.deploy(); // Assuming no arguments
-  await musicFutureTrading.deployed();
-  console.log("MusicFutureTrading deployed to:", musicFutureTrading.address);
+  // // Deploy BeatBitStaking
+  // const BeatBitStaking = await ethers.getContractFactory("BeatBitStaking");
+  // const beatBitStaking = await BeatBitStaking.deploy(); // Assuming no arguments
+  // console.log("BeatBitStaking deployed to:", (await beatBitStaking.deployed()).address);
+
+  // // Deploy EnhancedStaking
+  // const EnhancedStaking = await ethers.getContractFactory("EnhancedStaking");
+  // const enhancedStaking = await EnhancedStaking.deploy(); // Assuming no arguments
+  // console.log("EnhancedStaking deployed to:", (await enhancedStaking.deployed()).address);
+
+  // // Deploy MusicTokenBridge
+  // const MusicTokenBridge = await ethers.getContractFactory("MusicTokenBridge");
+  // const musicTokenBridge = await MusicTokenBridge.deploy(); // Assuming no arguments
+  // console.log("MusicTokenBridge deployed to:", (await musicTokenBridge.deployed()).address);
+
+  // // Deploy RadioStreaming
+  // const RadioStreaming = await ethers.getContractFactory("RadioStreaming");
+  // const radioStreaming = await RadioStreaming.deploy(); // Assuming no arguments
+  // console.log("RadioStreaming deployed to:", radioStreaming.target);
+
+  // // Deploy MusicFutureTrading
+  // const MusicFutureTrading = await ethers.getContractFactory("MusicFutureTrading");
+  // const musicFutureTrading = await MusicFutureTrading.deploy(); // Assuming no arguments
+  // console.log("MusicFutureTrading deployed to:", musicFutureTrading.target);
 }
 
 main()
